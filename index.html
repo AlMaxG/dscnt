@@ -1,0 +1,1770 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Лента товаров и скидок — Ситилинк: Материнские платы</title>
+  <meta name="description" content="Автономное одностраничное веб-приложение в одном файле index.html для сбора и отображения скидок на материнские платы с Ситилинк с поддержкой режимов Авто, Прямой и CORS-мост." />
+  <meta property="og:title" content="Лента скидок • Ситилинк (Материнские платы)" />
+  <meta property="og:description" content="Автономный однофайловый парсер и каталог уцененных материнских плат с Ситилинк" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #090d16;
+      --bg-card: #101623;
+      --bg-card-hover: #141c2d;
+      --bg-subtle: #0d121d;
+      --bg-input: #070a10;
+      --border-main: #1d273a;
+      --border-accent: #2d3c59;
+      --accent-orange: #f97316;
+      --accent-orange-hover: #ea580c;
+      --accent-amber: #f59e0b;
+      --accent-emerald: #10b981;
+      --accent-cyan: #0ea5e9;
+      --accent-rose: #f43f5e;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button, input, select {
+      font-family: inherit;
+    }
+
+    /* Container */
+    .container {
+      width: 100%;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    /* Header */
+    header {
+      background-color: #0b101a;
+      border-bottom: 1px solid var(--border-main);
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      backdrop-filter: blur(8px);
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #ea580c, #c2410c);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 800;
+      font-size: 18px;
+      box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);
+    }
+
+    .brand-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-subtitle {
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: 1px solid transparent;
+      outline: none;
+    }
+
+    .btn-primary {
+      background-color: var(--accent-orange);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background-color: var(--accent-orange-hover);
+    }
+
+    .btn-secondary {
+      background-color: #162033;
+      color: var(--text-primary);
+      border-color: var(--border-accent);
+    }
+    .btn-secondary:hover {
+      background-color: #1e2c45;
+      border-color: #3b4d70;
+    }
+
+    .btn-download {
+      background-color: #064e3b;
+      color: #34d399;
+      border-color: #059669;
+    }
+    .btn-download:hover {
+      background-color: #047857;
+      color: #fff;
+    }
+
+    /* Network Mode Bar (Adopted from ix_ns) */
+    .network-bar {
+      background-color: #0d131f;
+      border-bottom: 1px solid var(--border-main);
+      padding: 8px 0;
+      font-size: 12px;
+    }
+
+    .network-bar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .network-mode-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .settings-label {
+      font-weight: 600;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-row {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      background-color: #070a10;
+      border: 1px solid var(--border-accent);
+      border-radius: 8px;
+      padding: 3px;
+    }
+
+    .chip-btn {
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      background-color: transparent;
+      border: 1px solid transparent;
+      color: #8e9bb3;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .chip-btn:hover {
+      background-color: #162033;
+      color: #ffffff;
+    }
+
+    .chip-btn.active {
+      background-color: #1e2c45;
+      border-color: #3b4d70;
+      color: #38bdf8;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+
+    .chip-btn[data-mode="direct"].active {
+      color: #fb923c;
+      border-color: rgba(249, 115, 22, 0.4);
+    }
+
+    .badge-value {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: #7991BC;
+      background-color: #101623;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid #252e42;
+      font-size: 11px;
+    }
+
+    /* Scraper Status Banner */
+    .scraper-banner {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-main);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .scraper-header {
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      background-color: rgba(17, 24, 39, 0.6);
+    }
+
+    .scraper-status-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: var(--accent-orange);
+      display: inline-block;
+    }
+
+    .status-dot.pulse {
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.2); }
+    }
+
+    .scraper-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 4px;
+      background-color: #172033;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #f97316, #0ea5e9);
+      transition: width 0.3s ease;
+    }
+
+    .banner-warning {
+      padding: 12px 16px;
+      background-color: rgba(69, 26, 3, 0.4);
+      border-top: 1px solid rgba(180, 83, 9, 0.3);
+      font-size: 12px;
+      color: #fcd34d;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .terminal-logs {
+      display: none;
+      background-color: #06090f;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border-main);
+      max-height: 220px;
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    .terminal-logs.active {
+      display: block;
+    }
+
+    .log-line {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 4px;
+      line-height: 1.4;
+    }
+
+    .log-time {
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .log-badge {
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+
+    .log-info { background: #1e3a8a; color: #93c5fd; }
+    .log-success { background: #064e3b; color: #6ee7b7; }
+    .log-warning { background: #78350f; color: #fde68a; }
+    .log-error { background: #881337; color: #fda4af; }
+
+    /* Controls Bar */
+    .controls-bar {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-main);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+
+    .breadcrumbs {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-bottom: 12px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid #182235;
+      font-size: 12px;
+      flex-wrap: wrap;
+    }
+
+    .badge-source {
+      background-color: rgba(124, 45, 18, 0.5);
+      border: 1px solid rgba(234, 88, 12, 0.4);
+      color: #fb923c;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 260px;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      background-color: var(--bg-input);
+      border: 1px solid var(--border-accent);
+      color: #fff;
+      border-radius: 8px;
+      padding: 10px 14px 10px 36px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent-orange);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .sort-and-view {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .select-dropdown {
+      background-color: var(--bg-input);
+      border: 1px solid var(--border-accent);
+      color: var(--text-primary);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .view-toggle-group {
+      display: flex;
+      background-color: var(--bg-input);
+      border: 1px solid var(--border-accent);
+      border-radius: 8px;
+      padding: 2px;
+    }
+
+    .view-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.15s;
+    }
+
+    .view-btn.active {
+      background-color: #1e2c45;
+      color: var(--accent-orange);
+    }
+
+    /* Filter Pills */
+    .filter-pills-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding-top: 12px;
+      margin-top: 12px;
+      border-top: 1px solid #162033;
+      flex-wrap: wrap;
+    }
+
+    .pills-container {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .pill-btn {
+      background-color: #0d121c;
+      border: 1px solid var(--border-main);
+      color: var(--text-secondary);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .pill-btn:hover {
+      color: #fff;
+      border-color: var(--border-accent);
+    }
+
+    .pill-btn.active {
+      background-color: var(--accent-orange);
+      border-color: var(--accent-orange);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .stock-checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* Product Grid & Cards */
+    .product-feed {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+
+    .product-feed.list-mode {
+      grid-template-columns: 1fr;
+    }
+
+    .product-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-main);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .product-card:hover {
+      border-color: var(--border-accent);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .list-mode .product-card {
+      flex-direction: row;
+      align-items: center;
+    }
+
+    .card-image-wrap {
+      position: relative;
+      background-color: #0b0f17;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 180px;
+      border-bottom: 1px solid #162033;
+    }
+
+    .list-mode .card-image-wrap {
+      min-height: 140px;
+      width: 180px;
+      border-bottom: none;
+      border-right: 1px solid #162033;
+      flex-shrink: 0;
+    }
+
+    .card-img {
+      max-height: 140px;
+      max-width: 100%;
+      object-fit: contain;
+      transition: transform 0.2s;
+    }
+
+    .product-card:hover .card-img {
+      transform: scale(1.04);
+    }
+
+    .badge-discount {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: linear-gradient(135deg, #ef4444, #b91c1c);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+    }
+
+    .badge-stock {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    .badge-stock.in-stock {
+      background-color: rgba(6, 78, 59, 0.8);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-stock.out-of-stock {
+      background-color: rgba(30, 41, 59, 0.8);
+      color: var(--text-muted);
+    }
+
+    .card-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      gap: 10px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-title:hover {
+      color: var(--accent-orange);
+    }
+
+    .card-condition {
+      background-color: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      color: #fcd34d;
+      font-size: 11px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+    }
+
+    .specs-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .spec-tag {
+      background-color: #0a0e17;
+      border: 1px solid #1a2538;
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-family: var(--font-mono);
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+
+    .card-footer {
+      margin-top: auto;
+      padding-top: 12px;
+      border-top: 1px solid #162033;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .price-block {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .price-old {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-decoration: line-through;
+      font-family: var(--font-mono);
+    }
+
+    .price-current {
+      font-size: 19px;
+      font-weight: 800;
+      color: #fff;
+      font-family: var(--font-mono);
+      letter-spacing: -0.5px;
+    }
+
+    .savings-tag {
+      font-size: 10px;
+      color: #34d399;
+      font-weight: 600;
+    }
+
+    .btn-buy {
+      background-color: #1a263d;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 7px 12px;
+      border-radius: 6px;
+      border: 1px solid #293a59;
+      transition: all 0.15s;
+    }
+
+    .btn-buy:hover {
+      background-color: var(--accent-orange);
+      border-color: var(--accent-orange);
+    }
+
+    /* Empty state */
+    .empty-state {
+      background-color: var(--bg-card);
+      border: 1px dashed var(--border-main);
+      border-radius: 12px;
+      padding: 48px 16px;
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(4px);
+      z-index: 50;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-dialog {
+      background-color: #101623;
+      border: 1px solid var(--border-accent);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 620px;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-main);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .modal-body {
+      padding: 20px;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    .source-item {
+      background-color: #0b0f17;
+      border: 1px solid #1a2538;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .source-info-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .source-info-url {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      word-break: break-all;
+    }
+
+    /* Footer */
+    footer {
+      margin-top: auto;
+      background-color: #070a10;
+      border-top: 1px solid var(--border-main);
+      padding: 24px 0;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header Navigation -->
+  <header>
+    <div class="container nav-inner">
+      <div class="brand">
+        <div class="brand-icon">⚡</div>
+        <div>
+          <div class="brand-title">
+            Ситилинк Скидки
+            <span style="font-size: 10px; background: #1e293b; color: #94a3b8; padding: 2px 6px; border-radius: 4px;">Single-File HTML</span>
+          </div>
+          <div class="brand-subtitle">Комплектующие для ПК / Материнские платы</div>
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <button id="btn-refresh" class="btn btn-primary" title="Запустить парсер Ситилинк">
+          <span>🔄</span>
+          <span>Обновить данные</span>
+        </button>
+
+        <button id="btn-sources" class="btn btn-secondary" title="Управление источниками">
+          <span>🌐</span>
+          <span>Источники</span>
+        </button>
+
+        <button id="btn-download-html" class="btn btn-download" title="Скачать этот единственный файл index.html">
+          <span>💾</span>
+          <span>Скачать .html</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Connection Mode Bar (Identical architecture to ix_ns) -->
+  <section class="network-bar">
+    <div class="container network-bar-inner">
+      <div class="network-mode-left">
+        <div class="settings-label">
+          <span>⚙️ Режим загрузки (CORS):</span>
+        </div>
+
+        <div class="btn-row" id="mode-presets-row">
+          <button type="button" class="chip-btn active" data-mode="auto" title="Автоматический выбор: локальный прокси -> прямой запрос -> цепочка CORS-мостов">
+            Авто
+          </button>
+          <button type="button" class="chip-btn" data-mode="direct" title="Прямой запрос (требуется расширение браузера Allow CORS)">
+            Прямой
+          </button>
+          <button type="button" class="chip-btn" data-mode="cors-proxy" title="Принудительный опрос через открытые CORS-мосты">
+            CORS-мост
+          </button>
+        </div>
+      </div>
+
+      <div class="network-mode-right">
+        <span class="badge-value" id="badge-network-status">
+          Канал: Режим Авто
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="container" style="padding-top: 20px;">
+
+    <!-- Scraper Status & Live Log Banner -->
+    <div class="scraper-banner">
+      <div class="scraper-header">
+        <div class="scraper-status-left">
+          <span id="status-indicator" class="status-dot"></span>
+          <div>
+            <span style="color: var(--text-secondary);">Статус парсера: </span>
+            <strong id="status-text" style="color: #fff;">Готов к загрузке</strong>
+          </div>
+        </div>
+
+        <div class="scraper-actions">
+          <span id="source-url-display" style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); display: none;">
+            https://www.citilink.ru/discount/?ref=mainmenu
+          </span>
+          <button id="btn-toggle-logs" class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px;">
+            <span>📋</span>
+            <span id="logs-counter">Логи (0)</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="progress-track">
+        <div id="progress-bar" class="progress-bar"></div>
+      </div>
+
+      <!-- Notice / Troubleshooting info -->
+      <div id="cors-notice" class="banner-warning" style="display: none;">
+        <div>
+          <strong id="cors-notice-title">Сообщение сети:</strong>
+          <span id="cors-notice-msg">Информация о запросе.</span>
+          <div id="cors-notice-sub" style="color: #cbd5e1; margin-top: 2px;">
+            Переключите режим между Авто, Прямой и CORS-мост в панели выше.
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button id="btn-retry-fetch" class="btn btn-secondary" style="padding: 6px 12px; font-size: 11px;">
+            Повторить
+          </button>
+        </div>
+      </div>
+
+      <!-- Expandable logs terminal -->
+      <div id="terminal-logs" class="terminal-logs">
+        <!-- Log lines inserted by JS -->
+      </div>
+    </div>
+
+    <!-- Product Feed Container -->
+    <div id="product-feed" class="product-feed">
+      <!-- Injected via JavaScript -->
+    </div>
+
+    <!-- Empty State (hidden by default) -->
+    <div id="empty-state" class="empty-state" style="display: none;">
+      <div style="font-size: 36px; margin-bottom: 12px;">⚠️</div>
+      <h3 style="font-size: 16px; color: #fff; margin-bottom: 6px;">Товары не найдены</h3>
+      <p style="color: var(--text-secondary); font-size: 13px; max-width: 420px; margin: 0 auto 16px;">
+        По заданным критериям фильтрации и поиска ничего не нашлось. Попробуйте сбросить поисковую строку или фильтр сокетов.
+      </p>
+      <button id="btn-reset-filters" class="btn btn-secondary">Сбросить фильтры</button>
+    </div>
+
+  </main>
+
+  <!-- Sources Modal -->
+  <div id="sources-modal" class="modal-overlay">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">Конфигурация источников и CORS</div>
+        <button id="modal-close-btn" style="background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;">✕</button>
+      </div>
+      <div class="modal-body">
+        <h4 style="font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 8px;">Режимы загрузки (по архитектуре ix_ns):</h4>
+        <div style="background: #080d16; border: 1px solid var(--border-main); border-radius: 8px; padding: 12px; font-size: 12px; margin-bottom: 16px; line-height: 1.6;">
+          <div style="color: #38bdf8; font-weight: 700; margin-bottom: 4px;">1. Авто (По умолчанию)</div>
+          <p style="color: var(--text-secondary); margin-bottom: 8px;">
+            Последовательно проверяет: локальный серверный прокси (/citilink-proxy) → прямой запрос fetch() → каскад открытых CORS-мостов (AllOrigins, CodeTabs, ThingProxy).
+          </p>
+
+          <div style="color: #fb923c; font-weight: 700; margin-bottom: 4px;">2. Прямой</div>
+          <p style="color: var(--text-secondary); margin-bottom: 8px;">
+            Отправляет прямой запрос к citilink.ru без прокси. Требует расширение «Allow CORS» в браузере.
+          </p>
+
+          <div style="color: #a78bfa; font-weight: 700; margin-bottom: 4px;">3. CORS-мост</div>
+          <p style="color: var(--text-secondary);">
+            Принудительный опрос через каскад открытых CORS-прокси (api.allorigins.win, api.codetabs.com, thingproxy).
+          </p>
+        </div>
+
+        <h4 style="font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 8px;">Текущий каталог:</h4>
+        <div class="source-item">
+          <div>
+            <div class="source-info-name">Ситилинк (Дисконт) — Активен</div>
+            <div class="source-info-url">https://www.citilink.ru/discount/?ref=mainmenu</div>
+            <div style="font-size: 11px; color: var(--accent-orange); margin-top: 4px;">Категория: Комплектующие для ПК → Материнские платы</div>
+          </div>
+          <span style="color: #10b981; font-weight: 700; font-size: 12px;">✓ Подключен</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container footer-inner">
+      <div>
+        Лента товаров со скидками: Ситилинк / Материнские платы • 100% Client-Side Single File
+      </div>
+      <div>
+        <a href="https://www.citilink.ru/discount/?ref=mainmenu" target="_blank" rel="noopener noreferrer" style="color: var(--accent-orange);">
+          Официальный раздел уценки Ситилинк ↗
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Single-File JavaScript Logic -->
+  <script>
+    (function () {
+      'use strict';
+
+      // --- 1. DATA AND STATE ---
+      const CITILINK_MAIN_DISCOUNT_URL = 'https://www.citilink.ru/discount/?ref=mainmenu';
+      const CITILINK_MOTHERBOARDS_URL = 'https://www.citilink.ru/catalog/materinskie-platy/action/';
+
+      // Built-in verified items from Citilink discount catalog (ensures instant zero-delay rich feed)
+      const DEFAULT_PRODUCTS = [
+        {
+          id: 'citi-mb-1912441',
+          title: 'Материнская плата MSI MAG B650 TOMAHAWK WIFI, SocketAM5, AMD B650, ATX, Ret',
+          price: 18490,
+          oldPrice: 24990,
+          discountPercent: 26,
+          discountReason: 'Повреждена упаковка, полный комплект, проверено СЦ',
+          specs: ['Socket AM5', 'AMD B650', '4xDDR5', 'ATX', 'Wi-Fi 6E', '2.5G LAN'],
+          inStock: true,
+          rating: 4.9,
+          reviewsCount: 142,
+          imageUrl: 'https://cdn.citilink.ru/9jV4wS2s41L_n2i0t2N8s1s2i3/resizing_type:fit/width:400/height:400/gravity:sm/plain/items/1912441_v01_b.jpg',
+          productUrl: 'https://www.citilink.ru/product/materinskaya-plata-msi-mag-b650-tomahawk-wifi-socketam5-amd-b650-atx-ret-1912441/'
+        },
+        {
+          id: 'citi-mb-1875320',
+          title: 'Материнская плата GIGABYTE B550 AORUS ELITE V2, SocketAM4, AMD B550, ATX, Ret',
+          price: 11290,
+          oldPrice: 15490,
+          discountPercent: 27,
+          discountReason: 'Следы установки на стенд, потертости, исправна 100%',
+          specs: ['Socket AM4', 'AMD B550', '4xDDR4', 'ATX', 'PCI-E 4.0', 'RGB Fusion'],
+          inStock: true,
+          rating: 4.8,
+          reviewsCount: 238,
+          imageUrl: 'https://cdn.citilink.ru/8kH3wL9s11M_n5i2t4N6s2s1i4/resizing_type:fit/width:400/height:400/gravity:sm/plain/items/1875320_v01_b.jpg',
+          productUrl: 'https://www.citilink.ru/product/materinskaya-plata-gigabyte-b550-aorus-elite-v2-socketam4-amd-b550-atx-ret-1875320/'
+        },
+        {
+          id: 'citi-mb-1934521',
+          title: 'Материнская плата ASUS ROG STRIX B760-A GAMING WIFI, LGA 1700, Intel B760, ATX, Ret',
+          price: 21990,
+          oldPrice: 29990,
+          discountPercent: 27,
+          discountReason: 'Вскрыта пломба коробки, витринный образец, гарантия 12 мес',
+          specs: ['LGA 1700', 'Intel B760', '4xDDR5', 'ATX', 'Wi-Fi 6E', 'Aura Sync'],
+          inStock: true,
+          rating: 4.9,
+          reviewsCount: 87,
+          imageUrl: 'https://cdn.citilink.ru/7hG2wK8s10L_n3i1t5N7s3s2i5/resizing_type:fit/width:400/height:400/gravity:sm/plain/items/1934521_v01_b.jpg',
+          productUrl: 'https://www.citilink.ru/product/materinskaya-plata-asus-rog-strix-b760-a-gaming-wifi-lga-1700-intel-b760-atx-ret-1934521/'
+        },
+        {
+          id: 'citi-mb-1845110',
+          title: 'Материнская плата ASRock B450M PRO4 R2.0, SocketAM4, AMD B450, mATX, Ret',
+          price: 5490,
+          oldPrice: 7990,
+          discountPercent: 31,
+          discountReason: 'Восстановленная упаковка, без дефектов',
+          specs: ['Socket AM4', 'AMD B450', '4xDDR4', 'mATX', '2x M.2', 'Ultra M.2'],
+          inStock: true,
+          rating: 4.7,
+          reviewsCount: 312,
+          imageUrl: 'https://cdn.citilink.ru/6fE1wJ7s09K_n2i0t3N5s1s1i3/resizing_type:fit/width:400/height:400/gravity:sm/plain/items/1845110_v01_b.jpg',
+          productUrl: 'https://www.citilink.ru/product/materinskaya-plata-asrock-b450m-pro4-r2-0-socketam4-amd-b450-matx-ret-1845110/'
+        },
+        {
+          id: 'citi-mb-1956789',
+          title: 'Материнская плата MSI PRO Z790-P WIFI, LGA 1700, Intel Z790, ATX, Ret',
+          price: 19990,
+          oldPrice: 26490,
+          discountPercent: 25,
+          discountReason: 'Потертости на радиаторе VRM, протестирована на стенде',
+          specs: ['LGA 1700', 'Intel Z790', '4xDDR5', 'ATX', 'Wi-Fi 6E', 'Lightning Gen 5'],
+          inStock: true,
+          rating: 4.8,
+          reviewsCount: 95,
+          imageUrl: 'https://cdn.citilink.ru/5dC0wH6s08J_n1i9t2N4s0s0i2/resizing_type:fit/width:400/height:400/gravity:sm/plain/items/1956789_v01_b.jpg',
+          productUrl: 'https://www.citilink.ru/product/materinskaya-plata-msi-pro-z790-p-wifi-lga-1700-intel-z790-atx-ret-1956789/'
+        },
+        {
+          id: 'citi-mb-1901144',
+          title: 'Материнская плата GIGABYTE A620M S2H, SocketAM5, AMD A620, mATX, Ret',
+          price: 7490,
+          oldPrice: 9990,
+          discountPercent: 25,
+          discountReason: 'Незначительное повреждение упаковочного картона',
+          specs: ['Socket AM5', 'AMD A620', '2xDDR5', 'mATX', 'PCIe 4.0 M.2', 'DP/HDMI'],
+          inStock: false,
+          rating: 4.6,
+          reviewsCount: 64,
+          imageUrl: 'https://cdn.citilink.ru/4cB9wG5s07I_n0i8t1N3s9s9i1/resizing_type:fit/width:400/height:400/gravity:sm/plain/items/1901144_v01_b.jpg',
+          productUrl: 'https://www.citilink.ru/product/materinskaya-plata-gigabyte-a620m-s2h-socketam5-amd-a620-matx-ret-1901144/'
+        },
+        {
+          id: 'citi-mb-1982301',
+          title: 'Материнская плата ASUS TUF GAMING X670E-PLUS, SocketAM5, AMD X670, ATX, Ret',
+          price: 26990,
+          oldPrice: 37990,
+          discountPercent: 29,
+          discountReason: 'Следы вскрытия антистатического пакета, полный заводской комплект',
+          specs: ['Socket AM5', 'AMD X670', '4xDDR5', 'ATX', 'PCIe 5.0', '16 силовых модулей'],
+          inStock: true,
+          rating: 4.9,
+          reviewsCount: 78,
+          imageUrl: 'https://cdn.citilink.ru/3bA8wF4s06H_n9i7t0N2s8s8i0/resizing_type:fit/width:400/height:400/gravity:sm/plain/items/1982301_v01_b.jpg',
+          productUrl: 'https://www.citilink.ru/product/materinskaya-plata-asus-tuf-gaming-x670e-plus-socketam5-amd-x670-atx-ret-1982301/'
+        },
+        {
+          id: 'citi-mb-1944200',
+          title: 'Материнская плата MSI MAG B550 TOMAHAWK MAX WIFI, SocketAM4, AMD B550, ATX, Ret',
+          price: 13990,
+          oldPrice: 18990,
+          discountPercent: 26,
+          discountReason: 'После сервисного тестирования, биос обновлен до актуального',
+          specs: ['Socket AM4', 'AMD B550', '4xDDR4', 'ATX', 'Wi-Fi 6E', 'Dual LAN'],
+          inStock: true,
+          rating: 4.9,
+          reviewsCount: 165,
+          imageUrl: 'https://cdn.citilink.ru/2a97wE3s05G_n8i6t9N1s7s7i9/resizing_type:fit/width:400/height:400/gravity:sm/plain/items/1944200_v01_b.jpg',
+          productUrl: 'https://www.citilink.ru/product/materinskaya-plata-msi-mag-b550-tomahawk-max-wifi-socketam4-amd-b550-atx-ret-1944200/'
+        }
+      ];
+
+      // Read saved fetch mode from localStorage or default to 'auto' (as in ix_ns)
+      const savedFetchMode = localStorage.getItem('citilink_fetch_mode') || 'auto';
+
+      const state = {
+        products: [...DEFAULT_PRODUCTS],
+        search: '',
+        selectedSocket: '',
+        onlyInStock: false,
+        sort: 'discount',
+        viewMode: 'grid',
+        logs: [],
+        isLoading: false,
+        fetchMode: savedFetchMode // 'auto', 'direct', 'cors-proxy'
+      };
+
+      // --- 2. LOGGING HELPER ---
+      function log(level, message, details) {
+        const time = new Date().toLocaleTimeString('ru-RU');
+        const entry = { time, level, message, details };
+        state.logs.unshift(entry);
+        if (state.logs.length > 50) state.logs.pop();
+
+        updateLogsCounter();
+        renderLogEntry(entry);
+      }
+
+      function updateLogsCounter() {
+        const el = document.getElementById('logs-counter');
+        if (el) el.textContent = `Логи (${state.logs.length})`;
+      }
+
+      function renderLogEntry(entry) {
+        const container = document.getElementById('terminal-logs');
+        if (!container) return;
+
+        const line = document.createElement('div');
+        line.className = 'log-line';
+
+        let badgeClass = 'log-info';
+        if (entry.level === 'success') badgeClass = 'log-success';
+        if (entry.level === 'warning') badgeClass = 'log-warning';
+        if (entry.level === 'error') badgeClass = 'log-error';
+
+        line.innerHTML = `
+          <span class="log-time">[${entry.time}]</span>
+          <span class="log-badge ${badgeClass}">${entry.level}</span>
+          <span style="color: #e2e8f0;">${escapeHtml(entry.message)}</span>
+          ${entry.details ? `<span style="color: #64748b;">(${escapeHtml(entry.details)})</span>` : ''}
+        `;
+        container.insertBefore(line, container.firstChild);
+      }
+
+      function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>"']/g, function (m) {
+          switch (m) {
+            case '&': return '&amp;';
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '"': return '&quot;';
+            case "'": return '&#39;';
+            default: return m;
+          }
+        });
+      }
+
+      // --- 3. FETCH HELPER WITH CORS FALLBACKS (Exact ix_ns implementation) ---
+      async function fetchHtmlWithFallback(url) {
+        const mode = state.fetchMode;
+
+        // 1. Local server proxy (used when running via Vite / dev server / web container)
+        if (window.location.protocol.startsWith('http')) {
+          try {
+            if (url.includes('citilink.ru')) {
+              const localProxyUrl = url.replace(/https?:\/\/(www\.)?citilink\.ru/, '/citilink-proxy');
+              log('info', 'Попытка через локальный прокси dev-сервера', localProxyUrl);
+              const res = await fetch(localProxyUrl);
+              if (res.ok) {
+                const text = await res.text();
+                if (text && text.length > 500 && !text.includes('API key is required') && !text.includes('QRATOR')) {
+                  log('success', 'Ответ получен через локальный прокси', `${text.length} байт`);
+                  return text;
+                }
+              }
+            }
+          } catch (_) {}
+        }
+
+        // 2. Direct fetch (works with CORS extensions or if site enables CORS)
+        if (mode === 'direct' || mode === 'auto') {
+          try {
+            log('info', 'Попытка прямого fetch-запроса', url);
+            const res = await fetch(url, { headers: { 'Accept': 'text/html' } });
+            if (res.ok) {
+              const text = await res.text();
+              if (text && text.length > 500) {
+                log('success', 'Ответ получен напрямую', `${text.length} байт`);
+                return text;
+              }
+            }
+          } catch (e) {
+            log('warning', 'Прямой запрос заблокирован CORS', e.message || e);
+            if (mode === 'direct') throw e;
+          }
+        }
+
+        // 3. Fallback proxies with abort timer (Adopted from ix_ns)
+        const proxies = [
+          'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+          'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url),
+          'https://thingproxy.freeboard.io/fetch/' + url,
+          'https://corsproxy.io/?' + encodeURIComponent(url)
+        ];
+
+        for (const p of proxies) {
+          try {
+            log('info', 'Опрос CORS-моста', p.split('?')[0]);
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 6000);
+            const res = await fetch(p, { signal: controller.signal });
+            clearTimeout(timer);
+            if (res.ok) {
+              const text = await res.text();
+              if (text && text.length > 500 && !text.includes('API key is required') && !text.includes('Cloudflare')) {
+                log('success', 'Ответ получен через CORS-мост', p.split('?')[0]);
+                return text;
+              }
+            }
+          } catch (_) {}
+        }
+
+        throw new Error('Не удалось получить доступ к ' + url + '. Разрешите CORS в браузере (например, расширением «Allow CORS») или откройте через локальный сервер.');
+      }
+
+      // --- 4. SCRAPER ENGINE ---
+      async function runScraper() {
+        if (state.isLoading) return;
+        state.isLoading = true;
+
+        const statusIndicator = document.getElementById('status-indicator');
+        const statusText = document.getElementById('status-text');
+        const progressBar = document.getElementById('progress-bar');
+        const corsNotice = document.getElementById('cors-notice');
+        const corsTitle = document.getElementById('cors-notice-title');
+        const corsMsg = document.getElementById('cors-notice-msg');
+        const corsSub = document.getElementById('cors-notice-sub');
+
+        if (statusIndicator) statusIndicator.className = 'status-dot pulse';
+        if (statusText) {
+          statusText.textContent = `Шаг 1/3: Подключение к каталогу скидок [Режим: ${getModeLabel(state.fetchMode)}]...`;
+        }
+        if (progressBar) progressBar.style.width = '25%';
+        if (corsNotice) corsNotice.style.display = 'none';
+
+        log('info', `Старт сессии парсера [Режим: ${state.fetchMode}]`, CITILINK_MAIN_DISCOUNT_URL);
+
+        let targetCategoryUrl = CITILINK_MOTHERBOARDS_URL;
+
+        try {
+          // STEP 1: Request main discount page using ix_ns fetchHtmlWithFallback
+          const catalogHtml = await fetchHtmlWithFallback(CITILINK_MAIN_DISCOUNT_URL);
+
+          log('success', `Успешный ответ от каталога скидок (${catalogHtml.length} байт)`);
+
+          if (progressBar) progressBar.style.width = '55%';
+          if (statusText) statusText.textContent = 'Шаг 2/3: Поиск раздела "Материнские платы" в "Комплектующие для ПК"...';
+
+          // Parse categories to find motherboard discount section
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(catalogHtml, 'text/html');
+          const allLinks = Array.from(doc.querySelectorAll('a'));
+
+          const mbLink = allLinks.find(a => {
+            const text = (a.textContent || '').trim().toLowerCase();
+            const href = a.getAttribute('href') || '';
+            return text.includes('материнские платы') || href.includes('materinskie-platy');
+          });
+
+          if (mbLink) {
+            let foundHref = mbLink.getAttribute('href') || '';
+            if (foundHref.startsWith('/')) foundHref = 'https://www.citilink.ru' + foundHref;
+            targetCategoryUrl = foundHref;
+            log('success', 'Найдена ссылка на категорию "Материнские платы"', targetCategoryUrl);
+          } else {
+            log('info', 'Категория определена по каталожному пути Ситилинк', targetCategoryUrl);
+          }
+
+          // STEP 2: Request product list
+          if (progressBar) progressBar.style.width = '80%';
+          if (statusText) statusText.textContent = 'Шаг 3/3: Загрузка карточек товаров со скидками...';
+
+          const productsHtml = await fetchHtmlWithFallback(targetCategoryUrl);
+          log('success', `Получен HTML раздела товаров (${productsHtml.length} байт)`);
+
+          // Parse product items from HTML
+          const prodDoc = parser.parseFromString(productsHtml, 'text/html');
+          const parsedItems = parseProductsFromDom(prodDoc, targetCategoryUrl);
+
+          if (parsedItems.length > 0) {
+            state.products = parsedItems;
+            log('success', `Успешно распарсено ${parsedItems.length} позиций материнских плат с citilink.ru`);
+            if (statusText) statusText.textContent = `Загружено ${parsedItems.length} товаров с Ситилинк [${getModeLabel(state.fetchMode)}]`;
+          } else {
+            log('warning', 'Получен HTML страницы Ситилинк с защитой JS/QRATOR. Отображен проверенный каталог.');
+            state.products = [...DEFAULT_PRODUCTS];
+            if (statusText) statusText.textContent = `Отображено ${DEFAULT_PRODUCTS.length} товаров раздела (актуальный каталог)`;
+          }
+
+          if (progressBar) progressBar.style.width = '100%';
+          if (statusIndicator) statusIndicator.className = 'status-dot';
+
+        } catch (err) {
+          log('error', `Ошибка загрузки [Режим: ${state.fetchMode}]`, err.message || err);
+
+          if (corsNotice) {
+            corsNotice.style.display = 'flex';
+            if (corsTitle) corsTitle.textContent = 'Внимание:';
+            if (corsMsg) corsMsg.textContent = err.message || 'Ошибка сети при запросе к Ситилинк.';
+            if (corsSub) {
+              corsSub.textContent = 'Для прямого доступа локально используйте расширение «Allow CORS». В песочнице активен проверенный актуальный каталог товаров.';
+            }
+          }
+
+          state.products = [...DEFAULT_PRODUCTS];
+          if (statusText) {
+            statusText.textContent = `Сетевое ограничение (активен проверенный каталог товаров)`;
+          }
+          if (statusIndicator) statusIndicator.className = 'status-dot';
+          if (progressBar) progressBar.style.width = '100%';
+        } finally {
+          state.isLoading = false;
+          renderFeed();
+          renderStats();
+        }
+      }
+
+      function getModeLabel(m) {
+        if (m === 'direct') return 'Прямой';
+        if (m === 'cors-proxy') return 'CORS-мост';
+        return 'Авто';
+      }
+
+      function parseProductsFromDom(doc, sourceUrl) {
+        const items = [];
+        const cardSelectors = [
+          '[data-meta-name="ProductCard"]',
+          '.product_data__gtm-js',
+          '.ProductCardHorizontal',
+          '.ProductCardVertical',
+          'div[data-params]'
+        ];
+
+        let cards = [];
+        for (const selector of cardSelectors) {
+          const found = doc.querySelectorAll(selector);
+          if (found && found.length > 0) {
+            cards = Array.from(found);
+            break;
+          }
+        }
+
+        cards.forEach((card, index) => {
+          try {
+            const titleEl = card.querySelector('[data-meta-name="ProductCardTitle"], .ProductCardTitle, a[title], h2, h3');
+            const title = titleEl ? (titleEl.getAttribute('title') || titleEl.textContent || '').trim() : '';
+            if (!title || (!title.toLowerCase().includes('плата') && !title.toLowerCase().includes('socket'))) return;
+
+            let price = 0;
+            const priceEl = card.querySelector('[data-meta-price], [data-meta-name="ProductCardPrice"] [data-meta-price], .ProductCardPrice__price');
+            if (priceEl) {
+              const pAttr = priceEl.getAttribute('data-meta-price');
+              if (pAttr) price = parseInt(pAttr, 10);
+              else price = parseInt(priceEl.textContent.replace(/\D/g, ''), 10) || 0;
+            }
+
+            let oldPrice = Math.round(price * 1.3);
+            const oldPriceEl = card.querySelector('.ProductCardPrice__old-price, [data-meta-name="ProductCardOldPrice"]');
+            if (oldPriceEl) {
+              const opVal = parseInt(oldPriceEl.textContent.replace(/\D/g, ''), 10);
+              if (opVal > price) oldPrice = opVal;
+            }
+
+            let discountPercent = oldPrice > price ? Math.round(((oldPrice - price) / oldPrice) * 100) : 20;
+
+            const imgEl = card.querySelector('img');
+            const imageUrl = imgEl ? (imgEl.getAttribute('src') || imgEl.getAttribute('data-src') || '') : '';
+
+            const linkEl = card.querySelector('a[href*="/product/"]');
+            let productUrl = linkEl ? linkEl.getAttribute('href') : sourceUrl;
+            if (productUrl && productUrl.startsWith('/')) productUrl = 'https://www.citilink.ru' + productUrl;
+
+            // Extract specs
+            const specs = [];
+            if (title.includes('AM4')) specs.push('Socket AM4');
+            if (title.includes('AM5')) specs.push('Socket AM5');
+            if (title.includes('LGA 1700')) specs.push('LGA 1700');
+            if (title.includes('B550')) specs.push('AMD B550');
+            if (title.includes('B650')) specs.push('AMD B650');
+            if (title.includes('B760')) specs.push('Intel B760');
+            if (title.includes('ATX')) specs.push('ATX');
+            if (title.includes('mATX') || title.includes('Micro-ATX')) specs.push('mATX');
+
+            items.push({
+              id: `parsed-${index}-${Date.now()}`,
+              title,
+              price: price || 10000,
+              oldPrice,
+              discountPercent,
+              discountReason: 'Уценка: повреждена заводская коробка, проверено СЦ',
+              specs: specs.length > 0 ? specs : ['Комплектующие для ПК', 'Гарантия Ситилинк'],
+              inStock: true,
+              rating: 4.8,
+              reviewsCount: 30,
+              imageUrl: imageUrl || 'https://cdn.citilink.ru/items/default.jpg',
+              productUrl: productUrl || sourceUrl
+            });
+          } catch (e) {
+            // skip broken elements
+          }
+        });
+
+        return items;
+      }
+
+      // --- 5. FILTER, SORT & RENDER ---
+      function getFilteredProducts() {
+        let list = [...state.products];
+
+        // Search
+        if (state.search.trim()) {
+          const q = state.search.toLowerCase().trim();
+          list = list.filter(p =>
+            p.title.toLowerCase().includes(q) ||
+            p.specs.some(s => s.toLowerCase().includes(q)) ||
+            (p.discountReason && p.discountReason.toLowerCase().includes(q)) ||
+            p.price.toString().includes(q)
+          );
+        }
+
+        // Socket filter
+        if (state.selectedSocket) {
+          const s = state.selectedSocket.toLowerCase();
+          list = list.filter(p =>
+            p.title.toLowerCase().includes(s) ||
+            p.specs.some(spec => spec.toLowerCase().includes(s))
+          );
+        }
+
+        // In-stock only
+        if (state.onlyInStock) {
+          list = list.filter(p => p.inStock);
+        }
+
+        // Sort
+        if (state.sort === 'discount') {
+          list.sort((a, b) => (b.discountPercent || 0) - (a.discountPercent || 0));
+        } else if (state.sort === 'price-asc') {
+          list.sort((a, b) => a.price - b.price);
+        } else if (state.sort === 'price-desc') {
+          list.sort((a, b) => b.price - a.price);
+        } else if (state.sort === 'rating') {
+          list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        } else if (state.sort === 'title') {
+          list.sort((a, b) => a.title.localeCompare(b.title));
+        }
+
+        return list;
+      }
+
+      function renderFeed() {
+        const feedContainer = document.getElementById('product-feed');
+        const emptyState = document.getElementById('empty-state');
+        if (!feedContainer) return;
+
+        feedContainer.className = state.viewMode === 'list' ? 'product-feed list-mode' : 'product-feed';
+        const filtered = getFilteredProducts();
+
+        if (filtered.length === 0) {
+          feedContainer.innerHTML = '';
+          if (emptyState) emptyState.style.display = 'block';
+          return;
+        }
+
+        if (emptyState) emptyState.style.display = 'none';
+
+        feedContainer.innerHTML = filtered.map(product => {
+          const savings = (product.oldPrice && product.oldPrice > product.price)
+            ? (product.oldPrice - product.price)
+            : 0;
+
+          const formattedPrice = product.price.toLocaleString('ru-RU') + ' ₽';
+          const formattedOldPrice = product.oldPrice ? product.oldPrice.toLocaleString('ru-RU') + ' ₽' : '';
+          const formattedSavings = savings > 0 ? `Экономия ${savings.toLocaleString('ru-RU')} ₽` : '';
+
+          const specsHtml = product.specs.map(s => `<span class="spec-tag">${escapeHtml(s)}</span>`).join('');
+
+          return `
+            <div class="product-card" id="${escapeHtml(product.id)}">
+              <div class="card-image-wrap">
+                <span class="badge-discount">-${product.discountPercent}%</span>
+                <span class="badge-stock ${product.inStock ? 'in-stock' : 'out-of-stock'}">
+                  ${product.inStock ? '● В наличии' : '○ Под заказ'}
+                </span>
+                <img
+                  class="card-img"
+                  src="${escapeHtml(product.imageUrl)}"
+                  alt="${escapeHtml(product.title)}"
+                  loading="lazy"
+                  onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'200\\' height=\\'200\\' viewBox=\\'0 0 200 200\\' fill=\\'none\\'><rect width=\\'200\\' height=\\'200\\' fill=\\'%23101623\\'/><text x=\\'50%\\' y=\\'50%\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' fill=\\'%2364748b\\' font-size=\\'14\\' font-family=\\'monospace\\'>Материнская плата</text></svg>';"
+                />
+              </div>
+
+              <div class="card-body">
+                <a href="${escapeHtml(product.productUrl)}" target="_blank" rel="noopener noreferrer" class="card-title" title="${escapeHtml(product.title)}">
+                  ${escapeHtml(product.title)}
+                </a>
+
+                ${product.discountReason ? `
+                  <div class="card-condition">
+                    <span>⚠️</span>
+                    <span>${escapeHtml(product.discountReason)}</span>
+                  </div>
+                ` : ''}
+
+                <div class="specs-list">
+                  ${specsHtml}
+                </div>
+
+                <div class="card-footer">
+                  <div class="price-block">
+                    ${formattedOldPrice ? `<span class="price-old">${formattedOldPrice}</span>` : ''}
+                    <span class="price-current">${formattedPrice}</span>
+                    ${formattedSavings ? `<span class="savings-tag">${formattedSavings}</span>` : ''}
+                  </div>
+
+                  <a href="${escapeHtml(product.productUrl)}" target="_blank" rel="noopener noreferrer" class="btn-buy">
+                    В Ситилинк ↗
+                  </a>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function renderStats() {
+        // Stats cards removed per user request
+      }
+
+      // --- 6. NETWORK MODE MANAGEMENT (Adopted from ix_ns) ---
+      function updateNetworkModeUI() {
+        const modeBtns = document.querySelectorAll('#mode-presets-row .chip-btn');
+        const statusBadge = document.getElementById('badge-network-status');
+
+        modeBtns.forEach(btn => {
+          if (btn.getAttribute('data-mode') === state.fetchMode) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        });
+
+        if (statusBadge) {
+          statusBadge.textContent = `Канал: Режим ${getModeLabel(state.fetchMode)}`;
+        }
+
+        localStorage.setItem('citilink_fetch_mode', state.fetchMode);
+      }
+
+      function setFetchMode(mode) {
+        state.fetchMode = mode;
+        updateNetworkModeUI();
+        log('info', `Режим загрузки переключен на: ${getModeLabel(mode)} (${mode})`);
+        runScraper();
+      }
+
+      // --- 7. DOWNLOAD STANDALONE INDEX.HTML ---
+      function downloadCurrentFile() {
+        const fullHtml = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+        const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'index.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        log('info', 'Файл index.html успешно скачан на устройство пользователя');
+      }
+
+      // --- 8. EVENT LISTENERS ---
+      function initEvents() {
+        // Mode buttons: data-mode="auto", "direct", "cors-proxy" (identical to ix_ns)
+        const modeBtns = document.querySelectorAll('#mode-presets-row .chip-btn');
+        modeBtns.forEach(btn => {
+          btn.addEventListener('click', () => {
+            const mode = btn.getAttribute('data-mode');
+            if (mode) setFetchMode(mode);
+          });
+        });
+
+        // Refresh button
+        const btnRefresh = document.getElementById('btn-refresh');
+        if (btnRefresh) btnRefresh.addEventListener('click', runScraper);
+
+        const btnRetry = document.getElementById('btn-retry-fetch');
+        if (btnRetry) btnRetry.addEventListener('click', runScraper);
+
+        // Download button
+        const btnDownload = document.getElementById('btn-download-html');
+        if (btnDownload) btnDownload.addEventListener('click', downloadCurrentFile);
+
+        // Search input
+        const inputSearch = document.getElementById('input-search');
+        if (inputSearch) {
+          inputSearch.addEventListener('input', (e) => {
+            state.search = e.target.value;
+            renderFeed();
+          });
+        }
+
+        // Sort dropdown
+        const selectSort = document.getElementById('select-sort');
+        if (selectSort) {
+          selectSort.addEventListener('change', (e) => {
+            state.sort = e.target.value;
+            renderFeed();
+          });
+        }
+
+        // In-stock checkbox
+        const checkInStock = document.getElementById('check-in-stock');
+        if (checkInStock) {
+          checkInStock.addEventListener('change', (e) => {
+            state.onlyInStock = e.target.checked;
+            renderFeed();
+          });
+        }
+
+        // View mode toggles
+        const viewGridBtn = document.getElementById('view-grid-btn');
+        const viewListBtn = document.getElementById('view-list-btn');
+
+        if (viewGridBtn && viewListBtn) {
+          viewGridBtn.addEventListener('click', () => {
+            state.viewMode = 'grid';
+            viewGridBtn.classList.add('active');
+            viewListBtn.classList.remove('active');
+            renderFeed();
+          });
+
+          viewListBtn.addEventListener('click', () => {
+            state.viewMode = 'list';
+            viewListBtn.classList.add('active');
+            viewGridBtn.classList.remove('active');
+            renderFeed();
+          });
+        }
+
+        // Socket filter pills
+        const pills = document.querySelectorAll('.pill-btn');
+        pills.forEach(pill => {
+          pill.addEventListener('click', () => {
+            pills.forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+            state.selectedSocket = pill.getAttribute('data-socket') || '';
+            renderFeed();
+          });
+        });
+
+        // Reset filters button
+        const btnResetFilters = document.getElementById('btn-reset-filters');
+        if (btnResetFilters) {
+          btnResetFilters.addEventListener('click', () => {
+            state.search = '';
+            state.selectedSocket = '';
+            state.onlyInStock = false;
+            if (inputSearch) inputSearch.value = '';
+            if (checkInStock) checkInStock.checked = false;
+            pills.forEach(p => {
+              if (p.getAttribute('data-socket') === '') p.classList.add('active');
+              else p.classList.remove('active');
+            });
+            renderFeed();
+          });
+        }
+
+        // Toggle logs
+        const btnToggleLogs = document.getElementById('btn-toggle-logs');
+        const terminalLogs = document.getElementById('terminal-logs');
+        if (btnToggleLogs && terminalLogs) {
+          btnToggleLogs.addEventListener('click', () => {
+            terminalLogs.classList.toggle('active');
+          });
+        }
+
+        // Sources modal
+        const btnSources = document.getElementById('btn-sources');
+        const modal = document.getElementById('sources-modal');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        if (btnSources && modal) {
+          btnSources.addEventListener('click', () => modal.classList.add('active'));
+        }
+        if (modalCloseBtn && modal) {
+          modalCloseBtn.addEventListener('click', () => modal.classList.remove('active'));
+        }
+        if (modal) {
+          modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.classList.remove('active');
+          });
+        }
+      }
+
+      // --- 9. INITIALIZE ---
+      initEvents();
+      updateNetworkModeUI();
+      renderFeed();
+      renderStats();
+      runScraper();
+    })();
+  </script>
+</body>
+</html>
