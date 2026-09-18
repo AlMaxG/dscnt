@@ -266,6 +266,89 @@
       color: #ffffff;
     }
 
+    .btn-inspect-response.has-data {
+      border-color: #10b981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.25);
+    }
+
+    .debug-modal-resizable {
+      width: 960px;
+      height: 720px;
+      max-width: 98vw;
+      max-height: 94vh;
+      min-width: 360px;
+      min-height: 380px;
+      resize: both;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background-color: #0d131f;
+      border: 1px solid var(--border-accent);
+      border-radius: 14px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(56, 189, 248, 0.2);
+    }
+
+    .debug-modal-resizable.is-fullscreen {
+      width: 98vw !important;
+      height: 96vh !important;
+      max-width: 98vw !important;
+      max-height: 96vh !important;
+      resize: none !important;
+      border-radius: 10px;
+    }
+
+    .btn-size-preset {
+      background: transparent;
+      border: 1px solid transparent;
+      color: #94a3b8;
+      border-radius: 5px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-size-preset:hover {
+      background: #1e293b;
+      color: #fff;
+    }
+
+    .btn-size-preset.active {
+      background: #1e2c45;
+      color: #38bdf8;
+      border-color: #3b4d70;
+    }
+
+    #modal-resize-grip {
+      position: absolute;
+      right: 3px;
+      bottom: 3px;
+      width: 18px;
+      height: 18px;
+      cursor: nwse-resize;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+      color: #38bdf8;
+      z-index: 20;
+      user-select: none;
+      pointer-events: auto;
+    }
+
+    #modal-resize-grip svg {
+      opacity: 0.6;
+      transition: opacity 0.15s;
+    }
+
+    #modal-resize-grip:hover svg {
+      opacity: 1;
+    }
+
     .badge-value {
       font-family: var(--font-mono);
       font-weight: 700;
@@ -943,7 +1026,7 @@
           <span id="source-url-display" style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); display: none;">
             https://www.citilink.ru/discount/?ref=mainmenu
           </span>
-          <button id="btn-inspect-response" class="btn-inspect-response" style="display: none;" title="Посмотреть сырые данные, полученные от юзерскрипта Tampermonkey">
+          <button id="btn-inspect-response" class="btn-inspect-response" title="Посмотреть отрендеренную страницу, полученную от юзерскрипта Tampermonkey">
             <span>🔍</span>
             <span>Данные юзерскрипта</span>
           </button>
@@ -1043,33 +1126,87 @@
 
   <!-- Userscript Debug Inspector Modal -->
   <div id="debug-modal" class="modal-overlay">
-    <div class="modal-dialog" style="max-width: 820px;">
-      <div class="modal-header">
-        <div style="display: flex; align-items: center; gap: 8px;">
+    <div id="debug-modal-dialog" class="modal-dialog debug-modal-resizable">
+      <div class="modal-header" style="padding: 12px 16px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
           <span style="font-size: 18px;">🔍</span>
           <div>
-            <div class="modal-title">Отладка ответа юзерскрипта (Tampermonkey)</div>
+            <div class="modal-title" style="display: flex; align-items: center; gap: 8px; font-size: 14px;">
+              <span>Данные юзерскрипта</span>
+              <span id="debug-window-size-tag" style="font-size: 10px; font-family: var(--font-mono); background: #162033; color: #94a3b8; padding: 2px 6px; border-radius: 4px; font-weight: 500;">960 × 720</span>
+            </div>
             <div id="debug-modal-subtitle" style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">
-              Ожидание данных...
+              Отрендеренная страница Ситилинк
             </div>
           </div>
         </div>
-        <button id="debug-modal-close-btn" style="background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;">✕</button>
-      </div>
-      <div class="modal-body" style="padding: 16px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; flex-wrap: wrap;">
-          <div style="display: flex; gap: 8px; font-size: 11px; font-family: var(--font-mono);">
-            <span id="debug-status-badge" style="background: #064e3b; color: #34d399; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.3);">Статус: 200 OK</span>
-            <span id="debug-size-badge" style="background: #1e293b; color: #94a3b8; padding: 2px 8px; border-radius: 4px;">Размер: 0 байт</span>
-            <span id="debug-cards-badge" style="background: #1e293b; color: #38bdf8; padding: 2px 8px; border-radius: 4px;">Найдено карточек: 0</span>
+
+        <!-- Window Controls & Resize Presets -->
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <div class="debug-size-presets" style="display: flex; gap: 3px; background: #070a10; border: 1px solid var(--border-accent); border-radius: 6px; padding: 2px;">
+            <button type="button" class="btn-size-preset" data-w="420" data-h="700" title="Смартфон (420×700)">📱 420px</button>
+            <button type="button" class="btn-size-preset active" data-w="960" data-h="720" title="Стандарт (960×720)">💻 960px</button>
+            <button type="button" class="btn-size-preset" data-w="1280" data-h="820" title="Широкий (1280×820)">🖥️ 1280px</button>
+            <button type="button" class="btn-size-preset" id="btn-toggle-fullscreen-modal" title="Развернуть / свернуть окно">⛶</button>
           </div>
-          <div style="display: flex; gap: 8px;">
-            <button id="btn-copy-raw-response" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;">
-              📋 Скопировать HTML
+          <button id="debug-modal-close-btn" style="background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; padding: 4px 8px; line-height: 1;" title="Закрыть окно">✕</button>
+        </div>
+      </div>
+
+      <!-- Toolbar / Subheader -->
+      <div style="padding: 8px 14px; background-color: #090e18; border-bottom: 1px solid var(--border-main); display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-family: var(--font-mono); flex-wrap: wrap;">
+          <span id="debug-status-badge" style="background: #064e3b; color: #34d399; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.3);">Статус: 200 OK</span>
+          <span id="debug-cards-badge" style="background: #1e293b; color: #38bdf8; padding: 2px 8px; border-radius: 4px;">Найдено товаров: 0</span>
+          <span id="debug-size-badge" style="background: #1e293b; color: #94a3b8; padding: 2px 8px; border-radius: 4px;">Размер: 0 байт</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <!-- View Switcher -->
+          <div style="display: inline-flex; gap: 2px; background: #070a10; border: 1px solid var(--border-accent); border-radius: 6px; padding: 2px;">
+            <button type="button" id="btn-view-rendered" class="chip-btn active" style="padding: 3px 8px; font-size: 11px;">
+              🌐 Отрендеренная страница
+            </button>
+            <button type="button" id="btn-view-raw" class="chip-btn" style="padding: 3px 8px; font-size: 11px;">
+              📄 Исходный HTML
+            </button>
+          </div>
+
+          <button id="btn-open-rendered-newtab" class="btn btn-secondary" style="font-size: 11px; padding: 4px 8px;" title="Открыть отрендеренную страницу в новой вкладке браузера">
+            ↗ В новой вкладке
+          </button>
+          <button id="btn-copy-raw-response" class="btn btn-secondary" style="font-size: 11px; padding: 4px 8px;" title="Скопировать исходный HTML код">
+            📋 Скопировать
+          </button>
+        </div>
+      </div>
+
+      <!-- Body: Rendered Iframe + Raw Textarea + Resize Grip -->
+      <div class="modal-body" style="padding: 10px; flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; min-height: 0;">
+        <!-- Rendered Page Iframe View (Default) -->
+        <div id="rendered-view-container" style="width: 100%; height: 100%; flex: 1; display: flex; flex-direction: column; position: relative; min-height: 0;">
+          <iframe id="debug-render-iframe" title="Отрендеренная страница Ситилинк" style="width: 100%; height: 100%; flex: 1; border: 1px solid #1e293b; border-radius: 8px; background: #ffffff;" sandbox="allow-same-origin allow-scripts allow-forms allow-popups"></iframe>
+          <div id="rendered-empty-notice" style="display: none; position: absolute; inset: 0; background: #0b0f17; border: 1px solid #1e293b; border-radius: 8px; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; color: var(--text-secondary);">
+            <div style="font-size: 32px; margin-bottom: 12px;">🌐</div>
+            <div style="font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 6px;">Отрендеренная страница еще не получена</div>
+            <div style="font-size: 12px; max-width: 440px; line-height: 1.5; color: var(--text-muted); margin-bottom: 16px;">
+              Переключите режим сети в шапке на «🐵 Юзерскрипт» и нажмите кнопку «Обновить данные», чтобы Tampermonkey выполнил запрос к Ситилинк и передал сюда страницу.
+            </div>
+            <button id="btn-trigger-fetch-from-modal" class="btn btn-primary" style="font-size: 12px; padding: 6px 14px;">
+              ⚡ Запустить загрузку сейчас
             </button>
           </div>
         </div>
-        <textarea id="debug-raw-textarea" readonly style="width: 100%; height: 380px; background-color: #080d16; border: 1px solid #1e293b; border-radius: 8px; color: #a5f3fc; font-family: var(--font-mono); font-size: 12px; padding: 12px; line-height: 1.5; resize: vertical; outline: none;"></textarea>
+
+        <!-- Raw HTML View (hidden by default) -->
+        <textarea id="debug-raw-textarea" readonly style="display: none; width: 100%; height: 100%; flex: 1; background-color: #080d16; border: 1px solid #1e293b; border-radius: 8px; color: #a5f3fc; font-family: var(--font-mono); font-size: 12px; padding: 12px; line-height: 1.5; resize: none; outline: none; box-sizing: border-box;"></textarea>
+
+        <!-- Visual corner resize grip -->
+        <div id="modal-resize-grip" title="Потяните угол для изменения размера окна">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M14 14H12V12H14V14ZM14 10H12V8H14V10ZM10 14H8V12H10V14ZM14 6H12V4H14V6ZM10 10H8V8H10V10ZM6 14H4V12H6V14Z"/>
+          </svg>
+        </div>
       </div>
     </div>
   </div>
@@ -1738,12 +1875,38 @@
       function updateDebugButtonVisibility() {
         const btnInspect = document.getElementById('btn-inspect-response');
         if (btnInspect) {
+          btnInspect.style.display = 'inline-flex';
           if (state.lastUserscriptResponse) {
-            btnInspect.style.display = 'inline-flex';
-          } else {
-            btnInspect.style.display = 'none';
+            btnInspect.classList.add('has-data');
           }
         }
+      }
+
+      function updateIframeContent(html, url) {
+        const iframe = document.getElementById('debug-render-iframe');
+        const emptyNotice = document.getElementById('rendered-empty-notice');
+        if (!iframe) return;
+
+        if (!html || html.trim().length === 0) {
+          if (emptyNotice) emptyNotice.style.display = 'flex';
+          iframe.style.display = 'none';
+          return;
+        }
+
+        if (emptyNotice) emptyNotice.style.display = 'none';
+        iframe.style.display = 'block';
+
+        const baseUrl = url || 'https://www.citilink.ru/discount/?ref=mainmenu';
+        let processedHtml = html;
+
+        const baseTag = `<base href="${baseUrl}" target="_blank">`;
+        if (/<head[^>]*>/i.test(processedHtml)) {
+          processedHtml = processedHtml.replace(/<head[^>]*>/i, `$&${baseTag}`);
+        } else {
+          processedHtml = `<!DOCTYPE html><html><head>${baseTag}</head><body>${processedHtml}</body></html>`;
+        }
+
+        iframe.srcdoc = processedHtml;
       }
 
       function openDebugModal() {
@@ -1758,11 +1921,12 @@
         const textarea = document.getElementById('debug-raw-textarea');
 
         if (!data) {
-          if (subTitle) subTitle.textContent = 'Данные от юзерскрипта еще не поступали. Выберите режим «Юзерскрипт» и нажмите «Обновить данные».';
+          if (subTitle) subTitle.textContent = 'Ожидание ответа юзерскрипта (Tampermonkey)';
           if (statusBadge) statusBadge.textContent = 'Нет данных';
           if (sizeBadge) sizeBadge.textContent = '0 байт';
           if (cardsBadge) cardsBadge.textContent = '0 товаров';
-          if (textarea) textarea.value = '/* Данные от юзерскрипта Tampermonkey еще не получены.\n\nИнструкция по отладке:\n1. Убедитесь, что расширение Tampermonkey установлено.\n2. Установите юзерскрипт citilink-bridge.user.js в Tampermonkey.\n3. Переключите режим сети на "🐵 Юзерскрипт" в шапке.\n4. Нажмите "Обновить данные".\n5. Ответ от GM_xmlhttpRequest и распарсенные данные отобразятся здесь. */';
+          if (textarea) textarea.value = '/* Данные от юзерскрипта Tampermonkey еще не получены.\n\nИнструкция по работе:\n1. Убедитесь, что расширение Tampermonkey установлено.\n2. Установите юзерскрипт citilink-bridge.user.js в Tampermonkey.\n3. Переключите режим сети на "🐵 Юзерскрипт" в шапке.\n4. Нажмите "Обновить данные".\n5. Отрендеренная страница отобразится здесь автоматически. */';
+          updateIframeContent('', '');
         } else {
           // Count parsed cards from this response
           let cardCount = 0;
@@ -1778,9 +1942,29 @@
           if (sizeBadge) sizeBadge.textContent = `Размер: ${(data.byteLength / 1024).toFixed(1)} КБ (${data.byteLength} байт)`;
           if (cardsBadge) cardsBadge.textContent = `Найдено товаров: ${cardCount}`;
           if (textarea) textarea.value = data.html;
+
+          updateIframeContent(data.html, data.url);
+        }
+
+        // Always activate rendered page view by default
+        const btnViewRendered = document.getElementById('btn-view-rendered');
+        const btnViewRaw = document.getElementById('btn-view-raw');
+        const renderedContainer = document.getElementById('rendered-view-container');
+        if (btnViewRendered && btnViewRaw) {
+          btnViewRendered.classList.add('active');
+          btnViewRaw.classList.remove('active');
+          if (renderedContainer) renderedContainer.style.display = 'flex';
+          if (textarea) textarea.style.display = 'none';
         }
 
         debugModal.classList.add('active');
+
+        // Update size tag on open
+        const dialog = document.getElementById('debug-modal-dialog');
+        const sizeTag = document.getElementById('debug-window-size-tag');
+        if (dialog && sizeTag) {
+          sizeTag.textContent = `${Math.round(dialog.offsetWidth)} × ${Math.round(dialog.offsetHeight)}`;
+        }
       }
 
       function initBridgeListener() {
@@ -1967,11 +2151,25 @@
           });
         }
 
-        // Debug Inspector Modal
+        // Debug Inspector Modal & Resizable Window Controls
         const btnInspectResponse = document.getElementById('btn-inspect-response');
         const debugModal = document.getElementById('debug-modal');
+        const debugModalDialog = document.getElementById('debug-modal-dialog');
         const debugModalCloseBtn = document.getElementById('debug-modal-close-btn');
-        const btnCopyRaw = document.getElementById('btn-copy-raw-response');
+        const sizeTag = document.getElementById('debug-window-size-tag');
+        const debugIframe = document.getElementById('debug-render-iframe');
+        const btnToggleFullscreen = document.getElementById('btn-toggle-fullscreen-modal');
+
+        function updateSizeTag() {
+          if (debugModalDialog && sizeTag) {
+            sizeTag.textContent = `${Math.round(debugModalDialog.offsetWidth)} × ${Math.round(debugModalDialog.offsetHeight)}`;
+          }
+        }
+
+        if (window.ResizeObserver && debugModalDialog) {
+          const ro = new ResizeObserver(() => updateSizeTag());
+          ro.observe(debugModalDialog);
+        }
 
         if (btnInspectResponse) {
           btnInspectResponse.addEventListener('click', openDebugModal);
@@ -1984,17 +2182,166 @@
             if (e.target === debugModal) debugModal.classList.remove('active');
           });
         }
+
+        // Size Presets & Fullscreen toggle
+        const sizePresetBtns = document.querySelectorAll('.btn-size-preset');
+        sizePresetBtns.forEach(btn => {
+          btn.addEventListener('click', () => {
+            if (!debugModalDialog) return;
+
+            if (btn === btnToggleFullscreen) {
+              const isFull = debugModalDialog.classList.toggle('is-fullscreen');
+              btn.textContent = isFull ? '❐' : '⛶';
+              btn.title = isFull ? 'Вернуть стандартный размер' : 'Развернуть на весь экран';
+              updateSizeTag();
+              return;
+            }
+
+            debugModalDialog.classList.remove('is-fullscreen');
+            if (btnToggleFullscreen) btnToggleFullscreen.textContent = '⛶';
+
+            const w = parseInt(btn.getAttribute('data-w'), 10);
+            const h = parseInt(btn.getAttribute('data-h'), 10);
+            if (w && h) {
+              const targetW = Math.min(window.innerWidth * 0.98, w);
+              const targetH = Math.min(window.innerHeight * 0.94, h);
+              debugModalDialog.style.width = targetW + 'px';
+              debugModalDialog.style.height = targetH + 'px';
+
+              sizePresetBtns.forEach(b => {
+                if (b !== btnToggleFullscreen) b.classList.remove('active');
+              });
+              btn.classList.add('active');
+              updateSizeTag();
+            }
+          });
+        });
+
+        // Corner Resize Grip Drag
+        const resizeGrip = document.getElementById('modal-resize-grip');
+        if (resizeGrip && debugModalDialog) {
+          let isDragging = false;
+          let startX = 0;
+          let startY = 0;
+          let startW = 0;
+          let startH = 0;
+
+          resizeGrip.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            startW = debugModalDialog.offsetWidth;
+            startH = debugModalDialog.offsetHeight;
+
+            if (debugIframe) debugIframe.style.pointerEvents = 'none';
+            document.body.style.userSelect = 'none';
+            document.body.style.cursor = 'nwse-resize';
+            e.preventDefault();
+          });
+
+          window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+            const newW = Math.max(360, Math.min(window.innerWidth * 0.98, startW + deltaX));
+            const newH = Math.max(380, Math.min(window.innerHeight * 0.94, startH + deltaY));
+
+            debugModalDialog.style.width = newW + 'px';
+            debugModalDialog.style.height = newH + 'px';
+            debugModalDialog.classList.remove('is-fullscreen');
+            if (btnToggleFullscreen) btnToggleFullscreen.textContent = '⛶';
+
+            sizePresetBtns.forEach(b => {
+              if (b !== btnToggleFullscreen) b.classList.remove('active');
+            });
+            updateSizeTag();
+          });
+
+          window.addEventListener('mouseup', () => {
+            if (isDragging) {
+              isDragging = false;
+              if (debugIframe) debugIframe.style.pointerEvents = 'auto';
+              document.body.style.userSelect = '';
+              document.body.style.cursor = '';
+            }
+          });
+        }
+
+        // View mode tabs (Rendered Page vs Raw HTML)
+        const btnViewRendered = document.getElementById('btn-view-rendered');
+        const btnViewRaw = document.getElementById('btn-view-raw');
+        const renderedViewContainer = document.getElementById('rendered-view-container');
+        const rawTextarea = document.getElementById('debug-raw-textarea');
+
+        if (btnViewRendered && btnViewRaw) {
+          btnViewRendered.addEventListener('click', () => {
+            btnViewRendered.classList.add('active');
+            btnViewRaw.classList.remove('active');
+            if (renderedViewContainer) renderedViewContainer.style.display = 'flex';
+            if (rawTextarea) rawTextarea.style.display = 'none';
+          });
+
+          btnViewRaw.addEventListener('click', () => {
+            btnViewRaw.classList.add('active');
+            btnViewRendered.classList.remove('active');
+            if (renderedViewContainer) renderedViewContainer.style.display = 'none';
+            if (rawTextarea) rawTextarea.style.display = 'block';
+          });
+        }
+
+        // Open in new tab
+        const btnOpenRenderedNewTab = document.getElementById('btn-open-rendered-newtab');
+        if (btnOpenRenderedNewTab) {
+          btnOpenRenderedNewTab.addEventListener('click', () => {
+            const data = state.lastUserscriptResponse;
+            if (data && data.html) {
+              const baseUrl = data.url || 'https://www.citilink.ru/discount/?ref=mainmenu';
+              let html = data.html;
+              const baseTag = `<base href="${baseUrl}" target="_blank">`;
+              if (/<head[^>]*>/i.test(html)) {
+                html = html.replace(/<head[^>]*>/i, `$&${baseTag}`);
+              } else {
+                html = `<!DOCTYPE html><html><head>${baseTag}</head><body>${html}</body></html>`;
+              }
+              const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+              const blobUrl = URL.createObjectURL(blob);
+              window.open(blobUrl, '_blank');
+            } else {
+              log('warning', 'Нет данных для открытия. Запустите загрузку через юзерскрипт.');
+            }
+          });
+        }
+
+        // Trigger fetch from empty state notice inside modal
+        const btnTriggerFetch = document.getElementById('btn-trigger-fetch-from-modal');
+        if (btnTriggerFetch) {
+          btnTriggerFetch.addEventListener('click', () => {
+            state.fetchMode = 'tampermonkey';
+            localStorage.setItem('citilink_fetch_mode', 'tampermonkey');
+            updateNetworkModeUI();
+            runScraper();
+          });
+        }
+
+        // Copy HTML button
+        const btnCopyRaw = document.getElementById('btn-copy-raw-response');
         if (btnCopyRaw) {
           btnCopyRaw.addEventListener('click', () => {
             const textarea = document.getElementById('debug-raw-textarea');
-            if (textarea && textarea.value) {
-              navigator.clipboard.writeText(textarea.value).then(() => {
+            const data = state.lastUserscriptResponse;
+            const contentToCopy = (data && data.html) ? data.html : (textarea ? textarea.value : '');
+
+            if (contentToCopy) {
+              navigator.clipboard.writeText(contentToCopy).then(() => {
                 const prev = btnCopyRaw.textContent;
                 btnCopyRaw.textContent = '✓ Скопировано!';
                 setTimeout(() => { btnCopyRaw.textContent = prev; }, 2000);
               }).catch(() => {
-                textarea.select();
-                document.execCommand('copy');
+                if (textarea) {
+                  textarea.style.display = 'block';
+                  textarea.select();
+                  document.execCommand('copy');
+                }
               });
             }
           });
