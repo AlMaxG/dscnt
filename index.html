@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1280" />
+    <title>DNS Markdown Feed</title>
+    <meta name="description" content="Минималистичная десктопная лента уцененных товаров DNS" />
+    <meta property="og:title" content="DNS Markdown Feed" />
+    <meta property="og:description" content="Минималистичная десктопная лента уцененных товаров DNS" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background-color: #0c0d10;
+        color: #e6e6e6;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        min-width: 1200px;
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .feed-container {
+        width: 1200px;
+        margin: 0 auto;
+        padding: 32px 0 64px 0;
+      }
+
+      .product-feed {
+        display: grid;
+        grid-template-columns: repeat(4, 285px);
+        gap: 20px;
+        justify-content: space-between;
+      }
+
+      .product-card {
+        background-color: #14151a;
+        border: 1px solid #20222a;
+        border-radius: 6px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        text-decoration: none;
+        color: inherit;
+        transition: border-color 0.2s ease, transform 0.15s ease;
+      }
+
+      .product-card:hover {
+        border-color: #3b3e4f;
+        transform: translateY(-2px);
+      }
+
+      .product-image-wrap {
+        width: 100%;
+        height: 220px;
+        background-color: #191b22;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        border-bottom: 1px solid #20222a;
+      }
+
+      .product-image {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        display: block;
+      }
+
+      .product-details {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .product-title {
+        font-size: 14px;
+        line-height: 1.4;
+        font-weight: 500;
+        color: #d1d5db;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .product-card:hover .product-title {
+        color: #ffffff;
+      }
+
+      .product-reason {
+        font-size: 11px;
+        line-height: 1.3;
+        color: #9ca3af;
+        background-color: #1e2029;
+        padding: 4px 8px;
+        border-radius: 4px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .product-price {
+        font-size: 18px;
+        font-weight: 700;
+        color: #f3f4f6;
+        letter-spacing: -0.01em;
+        margin-top: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="feed-container">
+      <div id="feed" class="product-feed"></div>
+    </div>
+
+    <script>
+      /**
+       * Настройки источника данных:
+       * USE_TEST_CORS_PROXY:
+       * - false (боевой режим): прямой fetch к DNS-Shop с браузерным плагином для CORS и передачей cookies (credentials: 'include').
+       * - true (тестовый режим): попытка получения через публичные CORS-прокси.
+       * Можно переопределить через параметр URL, например: ?proxy=true или ?proxy=false
+       */
+      const urlParams = new URLSearchParams(window.location.search);
+      const USE_TEST_CORS_PROXY = urlParams.has('proxy')
+        ? (urlParams.get('proxy') === 'true' || urlParams.get('proxy') === '1')
+        : false;
+
+      const TARGET_URL = 'https://www.dns-shop.ru/catalog/markdown/';
+
+      async function loadMarkdownFeed() {
+        const feedElement = document.getElementById('feed');
+        if (!feedElement) return;
+
+        try {
+          console.info(`[DNS Markdown] Запуск загрузки ленты. Режим CORS-прокси: ${USE_TEST_CORS_PROXY}`);
+          let html = '';
+
+          if (!USE_TEST_CORS_PROXY) {
+            // Прямой запрос к DNS-Shop (для боевой среды с браузерным CORS-расширением)
+            try {
+              const response = await fetch(TARGET_URL, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                  'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7'
+                }
+              });
+              if (response.ok) {
+                html = await response.text();
+              } else {
+                console.warn(`[DNS Markdown] Прямой запрос вернул статус HTTP ${response.status}`);
+              }
+            } catch (err) {
+              console.warn('[DNS Markdown] Ошибка прямого запроса (возможно, не включен плагин CORS):', err.message);
+              // Если прямой запрос заблокирован CORS, пробуем тестовые прокси в качестве резерва
+              html = await tryFetchViaProxies();
+            }
+          } else {
+            // Тестовая среда: запросы через публичные CORS-прокси
+            html = await tryFetchViaProxies();
+            if (!html) {
+              // Если прокси не ответили, пробуем прямой запрос
+              try {
+                const directRes = await fetch(TARGET_URL, { credentials: 'include' });
+                if (directRes.ok) html = await directRes.text();
+              } catch (_) {}
+            }
+          }
+
+          if (!html) {
+            console.warn('[DNS Markdown] Данные не получены. Согласно требованию, лента остается пустой.');
+            return;
+          }
+
+          // Проверка на страницу защиты Qrator Labs
+          if (html.includes('__qrator') || html.includes('qauth_utm')) {
+            console.warn('[DNS Markdown] DNS-Shop вернул страницу защиты от ботов (Qrator Labs). Для загрузки реального каталога необходима активная браузерная сессия на www.dns-shop.ru и расширение CORS.');
+            return;
+          }
+
+          const products = parseProducts(html);
+          console.info(`[DNS Markdown] Распознано товаров: ${products.length}`);
+
+          if (!products || products.length === 0) {
+            console.warn('[DNS Markdown] В полученном HTML товары не найдены. Лента остается пустой.');
+            return;
+          }
+
+          renderProducts(products, feedElement);
+        } catch (error) {
+          console.error('[DNS Markdown] Критическая ошибка при обработке:', error);
+          // Согласно требованию: при любой ошибке лента остается пустой
+        }
+      }
+
+      async function tryFetchViaProxies() {
+        const proxyList = [
+          `https://corsproxy.org/?url=${encodeURIComponent(TARGET_URL)}`,
+          `https://api.allorigins.win/raw?url=${encodeURIComponent(TARGET_URL)}`,
+          `https://api.allorigins.win/get?url=${encodeURIComponent(TARGET_URL)}`,
+          `https://corsproxy.io/?url=${encodeURIComponent(TARGET_URL)}`
+        ];
+
+        for (const proxyUrl of proxyList) {
+          try {
+            console.info(`[DNS Markdown] Попытка через прокси: ${proxyUrl.split('?')[0]}`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+            const res = await fetch(proxyUrl, { signal: controller.signal });
+            clearTimeout(timeoutId);
+
+            if (!res.ok) continue;
+
+            if (proxyUrl.includes('/get?')) {
+              const json = await res.json();
+              if (json && json.contents && json.contents.length > 500) {
+                return json.contents;
+              }
+            } else {
+              const text = await res.text();
+              if (text && text.length > 500 && !text.includes('legacy proxy URLs are no longer supported')) {
+                return text;
+              }
+            }
+          } catch (_) {
+            // переход к следующему прокси
+          }
+        }
+        return '';
+      }
+
+      function parseProducts(rawHtml) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(rawHtml, 'text/html');
+        const products = [];
+        const seenTitles = new Set();
+
+        // Гибкий поиск карточек товаров DNS
+        let cards = Array.from(doc.querySelectorAll(
+          '.catalog-product, .catalog-item, [data-product], [data-code], div[class*="catalog-product"], div[class*="product-card"]'
+        ));
+
+        // Если явные классы не найдены, ищем через ссылки на товары
+        if (cards.length === 0) {
+          const productLinks = Array.from(doc.querySelectorAll('a[href*="/product/"]'));
+          const detected = new Set();
+          productLinks.forEach(link => {
+            const wrapper = link.closest('div[class*="product"], div[class*="item"], div[class*="card"], li, article');
+            if (wrapper) detected.add(wrapper);
+          });
+          if (detected.size > 0) {
+            cards = Array.from(detected);
+          }
+        }
+
+        for (const card of cards) {
+          // 1. Название и ссылка
+          const titleEl = card.querySelector(
+            '.catalog-product__name, a[class*="name"], a[class*="title"], h2, h3, a[href*="/product/"], .ui-link'
+          );
+          const title = titleEl ? (titleEl.textContent || '').trim().replace(/\s+/g, ' ') : '';
+          if (!title || seenTitles.has(title)) continue;
+
+          let link = '';
+          if (titleEl && titleEl.tagName === 'A' && titleEl.getAttribute('href')) {
+            link = titleEl.getAttribute('href');
+          } else {
+            const linkEl = card.querySelector('a[href*="/product/"], a[href*="/catalog/"], a');
+            if (linkEl && linkEl.getAttribute('href')) {
+              link = linkEl.getAttribute('href');
+            }
+          }
+          if (link && !link.startsWith('http')) {
+            link = `https://www.dns-shop.ru${link.startsWith('/') ? '' : '/'}${link}`;
+          }
+
+          // 2. Цена
+          const priceEl = card.querySelector(
+            '.product-buy__price, .catalog-product__price, [class*="price_current"], [class*="price-current"], [class*="current-price"], [class*="price"]'
+          );
+          let price = priceEl ? (priceEl.textContent || '').trim().replace(/\s+/g, ' ') : '';
+          if (!price) {
+            const allText = card.textContent || '';
+            const match = allText.match(/(\d[\d\s\u00a0]*\s*(?:₽|руб\.?|рублей))/i);
+            if (match) {
+              price = match[0].trim();
+            }
+          }
+
+          // 3. Изображение
+          const imgEl = card.querySelector('img');
+          let imageUrl = '';
+          if (imgEl) {
+            imageUrl = imgEl.getAttribute('data-src') ||
+                       imgEl.getAttribute('data-srcset')?.split(' ')[0] ||
+                       imgEl.getAttribute('srcset')?.split(' ')[0] ||
+                       imgEl.getAttribute('src') || '';
+          }
+          if (!imageUrl) {
+            const sourceEl = card.querySelector('picture source');
+            if (sourceEl) {
+              imageUrl = sourceEl.getAttribute('srcset')?.split(' ')[0] || sourceEl.getAttribute('data-srcset')?.split(' ')[0] || '';
+            }
+          }
+          if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('data:')) {
+            if (imageUrl.startsWith('//')) {
+              imageUrl = 'https:' + imageUrl;
+            } else {
+              imageUrl = `https://www.dns-shop.ru${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+            }
+          }
+
+          // 4. Причина уценки (если указана)
+          const reasonEl = card.querySelector(
+            '.catalog-product__reason, [class*="reason"], [class*="markdown-info"], [class*="defect"], [class*="badge"]'
+          );
+          const reason = reasonEl ? (reasonEl.textContent || '').trim().replace(/\s+/g, ' ') : '';
+
+          seenTitles.add(title);
+          products.push({
+            title,
+            price,
+            image: imageUrl,
+            link,
+            reason
+          });
+        }
+
+        // Дополнительная проверка на структурированные данные schema.org/JSON-LD, если DOM не дал результатов
+        if (products.length === 0) {
+          const scriptTags = doc.querySelectorAll('script[type="application/ld+json"]');
+          for (const tag of scriptTags) {
+            try {
+              const parsed = JSON.parse(tag.textContent || '');
+              const items = Array.isArray(parsed) ? parsed : (parsed['@graph'] || (parsed.itemListElement ? parsed.itemListElement.map(i => i.item || i) : [parsed]));
+              for (const item of items) {
+                if (item && (item['@type'] === 'Product' || item.name)) {
+                  const name = (item.name || '').trim();
+                  if (!name || seenTitles.has(name)) continue;
+                  const itemPrice = item.offers?.price ? `${item.offers.price} ₽` : (item.offers?.lowPrice ? `от ${item.offers.lowPrice} ₽` : '');
+                  const itemImg = typeof item.image === 'string' ? item.image : (Array.isArray(item.image) ? item.image[0] : '');
+                  seenTitles.add(name);
+                  products.push({
+                    title: name,
+                    price: itemPrice,
+                    image: itemImg,
+                    link: item.url || '',
+                    reason: ''
+                  });
+                }
+              }
+            } catch (_) {}
+          }
+        }
+
+        return products;
+      }
+
+      function renderProducts(products, container) {
+        container.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+
+        for (const prod of products) {
+          const card = document.createElement(prod.link ? 'a' : 'div');
+          card.className = 'product-card';
+          if (prod.link) {
+            card.href = prod.link;
+            card.target = '_blank';
+            card.rel = 'noopener noreferrer';
+          }
+
+          if (prod.image) {
+            const imageWrap = document.createElement('div');
+            imageWrap.className = 'product-image-wrap';
+            const img = document.createElement('img');
+            img.className = 'product-image';
+            img.src = prod.image;
+            img.alt = prod.title;
+            img.loading = 'lazy';
+            img.onerror = () => imageWrap.remove();
+            imageWrap.appendChild(img);
+            card.appendChild(imageWrap);
+          }
+
+          const details = document.createElement('div');
+          details.className = 'product-details';
+
+          const title = document.createElement('div');
+          title.className = 'product-title';
+          title.textContent = prod.title;
+          details.appendChild(title);
+
+          if (prod.reason) {
+            const reason = document.createElement('div');
+            reason.className = 'product-reason';
+            reason.textContent = prod.reason;
+            details.appendChild(reason);
+          }
+
+          if (prod.price) {
+            const price = document.createElement('div');
+            price.className = 'product-price';
+            price.textContent = prod.price;
+            details.appendChild(price);
+          }
+
+          card.appendChild(details);
+          fragment.appendChild(card);
+        }
+
+        container.appendChild(fragment);
+      }
+
+      // Запуск получения данных при загрузке документа
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadMarkdownFeed);
+      } else {
+        loadMarkdownFeed();
+      }
+    </script>
+  </body>
+</html>
+
+
